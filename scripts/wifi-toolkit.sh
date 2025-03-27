@@ -39,15 +39,20 @@ print_usage() {
         "INTERFACE=wlan0   Specify wireless interface" \
         "-i wlan0          Interface flag"
 
-    print_command "scan" "Scan with airodump-ng" \
-        "./wifi-toolkit.sh scan [INTERFACE]" \
+    print_command "scan2" "Scan 2.4GHz networks" \
+        "./wifi-toolkit.sh scan2 [INTERFACE]" \
+        "INTERFACE=wlan0   Specify wireless interface" \
+        "-i wlan0          Interface flag"
+
+    print_command "scan5" "Scan 5GHz networks" \
+        "./wifi-toolkit.sh scan5 [INTERFACE]" \
         "INTERFACE=wlan0   Specify wireless interface" \
         "-i wlan0          Interface flag"
 
     print_command "scan-nm" "Scan with NetworkManager" \
         "./wifi-toolkit.sh scan-nm [INTERFACE]" \
         "INTERFACE=wlan0   Specify wireless interface" \
-        "-i wlan0          Interface flag"
+        "-i wlan0          Interface flag"    
 
     print_command "deauth" "Perform deauth attack" \
         "./wifi-toolkit.sh deauth [AP_MAC] [CLIENT_MAC] | [-a AP_MAC -c CLIENT_MAC]" \
@@ -160,11 +165,19 @@ cmd_managed() {
 }
 
 # ======================================================================
-#  AIRODUMP SCAN COMMAND
+#  2.4GHz SCAN COMMAND
 # ======================================================================
-cmd_scan() {
+cmd_scan2() {
     parse_common "$@"
     execute_and_check "airodump-ng --band bg $INTERFACE"
+}
+
+# ======================================================================
+#  5GHz SCAN COMMAND
+# ======================================================================
+cmd_scan5() {
+    parse_common "$@"
+    execute_and_check "airodump-ng --band a $INTERFACE"
 }
 
 # ======================================================================
@@ -284,9 +297,12 @@ case "$1" in
     managed)
         shift
         cmd_managed "$@" ;;
-    scan)
+    scan2)
         shift
-        cmd_scan "$@" ;;
+        cmd_scan2 "$@" ;;
+    scan5)
+        shift
+        cmd_scan5 "$@" ;;
     scan-nm)
         shift
         cmd_scan-nm "$@" ;;
