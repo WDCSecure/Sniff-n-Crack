@@ -1,2 +1,5 @@
 # MacOS System Files
 .DS_Store
+
+# Examples
+examples/wordlist-from-csv/
