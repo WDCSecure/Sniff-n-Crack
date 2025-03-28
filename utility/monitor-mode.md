@@ -13,6 +13,28 @@ Unlike Managed Mode, where the wireless interface only processes packets address
 2. Administrative privileges (root access) on your Linux system.
 3. Tools like `airmon-ng` (part of the Aircrack-ng suite) or `iw`.
 
+### Checking if Your Network Adapter Supports Monitor Mode
+
+Before enabling Monitor Mode, you need to verify if your wireless network adapter supports it. Follow these steps:
+
+1. Open a terminal and run the following command to list your wireless interfaces:
+   ```bash
+   iw list
+   ```
+
+2. Look for the "Supported interface modes" section in the output. If you see `monitor` listed, your adapter supports Monitor Mode.
+
+Example output:
+```
+Supported interface modes:
+     * IBSS
+     * managed
+     * AP
+     * monitor
+```
+
+If `monitor` is not listed, your adapter does not support Monitor Mode, and you may need to use a different wireless adapter.
+
 ### Steps to Enable Monitor Mode
 
 #### Using `airmon-ng`:
