@@ -17,12 +17,12 @@ Unlike Managed Mode, where the wireless interface only processes packets address
 
 Before enabling Monitor Mode, you need to verify if your wireless network adapter supports it. Follow these steps:
 
-1. Open a terminal and run the following command to list your wireless interfaces:
+1. Open a terminal and run the following command to list your wireless interfaces and check for supported modes:
    ```bash
-   iw list
+   iw list | grep "Supported interface modes" -A 8
    ```
 
-2. Look for the "Supported interface modes" section in the output. If you see `monitor` listed, your adapter supports Monitor Mode.
+2. Look for the `monitor` mode in the output. If `monitor` is listed, your adapter supports Monitor Mode.
 
 Example output:
 ```
@@ -31,6 +31,10 @@ Supported interface modes:
      * managed
      * AP
      * monitor
+     * P2P-client
+     * P2P-GO
+     * P2P-device
+```
 ```
 
 If `monitor` is not listed, your adapter does not support Monitor Mode, and you may need to use a different wireless adapter.
