@@ -4,6 +4,7 @@
 
 INTERFACE=${INTERFACE:-wlo1}
 # INTERFACE=${INTERFACE:-wlp2s0}
+# INTERFACE=${INTERFACE:-wlan0mon}
 
 # Color codes
 RED="\033[0;31m"
