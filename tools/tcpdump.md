@@ -2,74 +2,198 @@
 
 ## Manual
 
+# Manual
+
 ```
 TCPDUMP
-A powerful command-line packet analyzer
+    dump traffic on a network
 
 SYNOPSIS
-    tcpdump [options] [expression]
+    tcpdump [ -AbdDefhHIJKlLnNOpqStuUvxX# ] [ -B buffer_size ]
+             [ -c count ] [ --count ] [ -C file_size ]
+             [ -E spi@ipaddr algo:secret,... ]
+             [ -F file ] [ -G rotate_seconds ] [ -i interface ]
+             [ --immediate-mode ] [ -j tstamp_type ]
+             [ --lengths ] [ -m module ]
+             [ -M secret ] [ --number ] [ --print ]
+             [ --print-sampling nth ] [ -Q in|out|inout ] [ -r file ]
+             [ -s snaplen ] [ --skip count ] [ -T type ] [ --version ]
+             [ -V file ] [ -w file ] [ -W filecount ] [ -y datalinktype ]
+             [ -z postrotate-command ] [ -Z user ]
+             [ --time-stamp-precision=tstamp_precision ]
+             [ --micro ] [ --nano ]
+             [ expression ]
 
 DESCRIPTION
-    tcpdump is a command-line tool for capturing and analyzing network packets. It allows users to intercept and display packets being transmitted or received over a network to which the computer is attached. tcpdump uses the libpcap library for packet capturing.
+    tcpdump prints out a description of the contents of packets on a network interface that match the Boolean expression (see pcap-filter(7) for the expression syntax); the description is preceded by a time stamp, printed, by default, as hours, minutes, seconds, and fractions of a second since midnight. It can also be run with the -w flag, which causes it to save the packet data to a file for later analysis, and/or with the -r flag, which causes it to read from a saved packet file rather than to read packets from a network interface. It can also be run with the -V flag, which causes it to read a list of saved packet files. In all cases, only packets that match expression will be processed by tcpdump.
 
-    tcpdump can capture packets from a live network interface or read packets from a previously saved capture file in pcap format. It provides powerful filtering capabilities to capture only the packets of interest.
+    tcpdump will, if not run with the -c flag, continue capturing packets until it is interrupted by a SIGINT signal (generated, for example, by typing your interrupt character, typically control-C) or a SIGTERM signal (typically generated with the kill(1) command); if run with the -c flag, it will capture packets until it is interrupted by a SIGINT or SIGTERM signal or the specified number of packets have been processed.
+
+    When tcpdump finishes capturing packets, it will report counts of:
+
+        packets "captured" (this is the number of packets that tcpdump has received and processed);
+        packets "received by filter" (the meaning of this depends on the OS on which you're running tcpdump, and possibly on the way the OS was configured - if a filter was specified on the command line, on some OSes it counts packets regardless of whether they were matched by the filter expression and, even if they were matched by the filter expression, regardless of whether tcpdump has read and processed them yet, on other OSes it counts only packets that were matched by the filter expression regardless of whether tcpdump has read and processed them yet, and on other OSes it counts only packets that were matched by the filter expression and were processed by tcpdump);
+        packets "dropped by kernel" (this is the number of packets that were dropped, due to a lack of buffer space, by the packet capture mechanism in the OS on which tcpdump is running, if the OS reports that information to applications; if not, it will be reported as 0).
+
+    On platforms that support the SIGINFO signal, such as most BSDs (including macOS), it will report those counts when it receives a SIGINFO signal (generated, for example, by typing your "status" character, typically control-T, although on some platforms, such as macOS, the "status" character is not set by default, so you must set it with stty(1) in order to use it) and will continue capturing packets. On platforms that do not support the SIGINFO signal, the same can be achieved by using the SIGUSR1 signal.
+
+    Using the SIGUSR2 signal along with the -w flag will forcibly flush the packet buffer into the output file.
+
+    Reading packets from a network interface may require that you have special privileges; see the pcap(3PCAP) man page for details. Reading a saved packet file doesn't require special privileges.
 
 OPTIONS
-    Common options:
-        -i <interface>
-            Specify the network interface to listen on. If not specified, tcpdump will use the first interface it finds.
-        -w <file>
-            Write the captured packets to a file in pcap format for later analysis.
-        -r <file>
-            Read packets from a saved pcap file instead of capturing live packets.
-        -c <count>
-            Stop capturing after <count> packets.
-        -n
-            Do not resolve hostnames (display IP addresses instead).
-        -nn
-            Do not resolve hostnames or port names (display IP addresses and port numbers).
-        -v
-            Provide verbose output.
-        -vv
-            Provide more verbose output.
-        -vvv
-            Provide the most verbose output.
-        -e
-            Display the link-layer header of each packet.
-        -q
-            Provide less verbose output (quiet mode).
-        -X
-            Display packet contents in both hex and ASCII.
-        -xx
-            Display packet contents in hex (including link-layer headers).
-        -A
-            Display packet contents in ASCII.
-        -s <snaplen>
-            Set the snapshot length to <snaplen> bytes. The default is 262144 bytes.
-        -t
-            Do not print a timestamp on each line of output.
-        -tt
-            Print an unformatted timestamp on each line of output.
-        -ttt
-            Print a delta (microsecond) timestamp between packets.
-        -tttt
-            Print a human-readable timestamp on each line of output.
-        -z <postrotate-command>
-            Run the specified command after rotating the dump file (used with -C or -G).
-        -C <file-size>
-            Rotate the dump file after it reaches <file-size> megabytes.
-        -G <seconds>
-            Rotate the dump file every <seconds> seconds.
-
-    Filtering options:
-        -f
-            Do not attempt to print human-readable hostnames.
-        -l
-            Make stdout line-buffered. Useful if you want to see the data while capturing.
-        -K
-            Do not attempt to verify IP checksum.
-        -E <spi@ipaddr:algo:secret>
-            Decrypt IPsec ESP packets using the provided parameters.
+    -A
+        Print each packet (minus its link level header) in ASCII. Handy for capturing web pages. No effect when -x[x] or -X[X] options are used.
+    -b
+        Print the AS number in BGP packets using "asdot" rather than "asplain" representation, in RFC 5396 terms.
+    -B buffer_size
+    --buffer-size=buffer_size
+        Set the operating system capture buffer size to buffer_size, in units of KiB (1024 bytes).
+    -c count
+        Exit after receiving or reading count packets. If the --skip option is used, the count starts after the skipped packets.
+    --count
+        Print only on stdout the packet count when reading capture file(s) instead of parsing/printing the packets. If a filter is specified on the command line, tcpdump counts only packets that were matched by the filter expression.
+    -C file_size
+        Before writing a raw packet to a savefile, check whether the file is currently larger than file_size and, if so, close the current savefile and open a new one. Savefiles after the first savefile will have the name specified with the -w flag, with a number after it, starting at 1 and continuing upward. The default unit of file_size is millions of bytes (1,000,000 bytes, not 1,048,576 bytes).
+        By adding a suffix of k/K, m/M or g/G to the value, the unit can be changed to 1,024 (KiB), 1,048,576 (MiB), or 1,073,741,824 (GiB) respectively.
+    -d
+        Dump the compiled packet-matching code in a human-readable form to standard output and stop.
+    -dd
+        Dump packet-matching code as a C array of struct bpf_insn structures.
+    -ddd
+        Dump packet-matching code as decimal numbers (preceded with a count).
+    -D
+    --list-interfaces
+        Print the list of the network interfaces available on the system and on which tcpdump can capture packets. For each network interface, a number and an interface name, possibly followed by a text description of the interface, are printed.
+    -e
+        Print the link-level header on each dump line. This can be used, for example, to print MAC layer addresses for protocols such as Ethernet and IEEE 802.11.
+    -E
+        Use spi@ipaddr algo:secret for decrypting IPsec ESP packets that are addressed to addr and contain Security Parameter Index value spi.
+    -f
+        Print `foreign' IPv4 addresses numerically rather than symbolically.
+    -F file
+        Use file as input for the filter expression. An additional expression given on the command line is ignored.
+    -G rotate_seconds
+        Rotates the dump file specified with the -w option every rotate_seconds seconds.
+    -h
+    --help
+        Print the tcpdump and libpcap version strings, print a usage message, and exit.
+    --version
+        Print the tcpdump and libpcap version strings and exit.
+    -H
+        Attempt to detect 802.11s draft mesh headers.
+    -i interface
+    --interface=interface
+        Listen, report the list of link-layer types, or report the results of compiling a filter expression on interface.
+    -I
+    --monitor-mode
+        Put the interface in "monitor mode"; this is supported only on IEEE 802.11 Wi-Fi interfaces.
+    --immediate-mode
+        Capture in "immediate mode". In this mode, packets are delivered to tcpdump as soon as they arrive.
+    -j tstamp_type
+    --time-stamp-type=tstamp_type
+        Set the time stamp type for the capture to tstamp_type.
+    -J
+    --list-time-stamp-types
+        List the supported time stamp types for the interface and exit.
+    --time-stamp-precision=tstamp_precision
+        Set the time stamp precision for the capture to tstamp_precision.
+    --micro
+    --nano
+        Shorthands for --time-stamp-precision=micro or --time-stamp-precision=nano.
+    -K
+    --dont-verify-checksums
+        Don't attempt to verify IP, TCP, or UDP checksums.
+    -l
+        Make stdout line buffered. Useful if you want to see the data while capturing it.
+    -L
+    --list-data-link-types
+        List the known data link types for the interface, in the specified mode, and exit.
+    --lengths
+        Print the captured and original packet lengths.
+    -m module
+        Load SMI MIB module definitions from file module.
+    -M secret
+        Use secret as a shared secret for validating the digests found in TCP segments with the TCP-MD5 option (RFC 2385), if present.
+    -n
+        Don't convert addresses (i.e., host addresses, port numbers, etc.) to names.
+    -N
+        Don't print domain name qualification of host names.
+    -#
+    --number
+        Print a packet number at the beginning of the line.
+    -O
+    --no-optimize
+        Do not run the packet-matching code optimizer.
+    -p
+    --no-promiscuous-mode
+        Don't put the interface into promiscuous mode.
+    --print
+        Print parsed packet output, even if the raw packets are being saved to a file with the -w flag.
+    --print-sampling=nth
+        Print every nth packet.
+    -Q direction
+    --direction=direction
+        Choose send/receive direction direction for which packets should be captured.
+    -q
+        Quick output. Print less protocol information so output lines are shorter.
+    -r file
+        Read packets from file (which was created with the -w option or by other tools that write pcap or pcapng files).
+    -S
+    --absolute-tcp-sequence-numbers
+        Print absolute, rather than relative, TCP sequence numbers.
+    -s snaplen
+    --snapshot-length=snaplen
+        Snarf snaplen bytes of data from each packet rather than the default of 262144 bytes.
+    --skip count
+        Skip count packets before writing or printing.
+    -T type
+        Force packets selected by "expression" to be interpreted the specified type.
+    -t
+        Don't print a timestamp on each dump line.
+    -tt
+        Print the timestamp, as seconds since January 1, 1970, 00:00:00, UTC.
+    -ttt
+        Print a delta (microsecond or nanosecond resolution depending on the --time-stamp-precision option) between current and previous line.
+    -tttt
+        Print a timestamp, as hours, minutes, seconds, and fractions of a second since midnight, preceded by the date.
+    -ttttt
+        Print a delta (microsecond or nanosecond resolution depending on the --time-stamp-precision option) between current and first line.
+    -u
+        Print undecoded NFS handles.
+    -U
+    --packet-buffered
+        Make the printed packet output "packet-buffered".
+    -v
+        Produce verbose output.
+    -vv
+        Even more verbose output.
+    -vvv
+        Even more verbose output.
+    -V file
+        Read a list of filenames from file.
+    -w file
+        Write the raw packets to file rather than parsing and printing them out.
+    -W filecount
+        Used in conjunction with the -C option, this will limit the number of files created to the specified number.
+    -x
+        Print the data of each packet (minus its link level header) in hex.
+    -xx
+        Print the data of each packet, including its link level header, in hex.
+    -X
+        Print the data of each packet (minus its link level header) in hex and ASCII.
+    -XX
+        Print the data of each packet, including its link level header, in hex and ASCII.
+    -y datalinktype
+    --linktype=datalinktype
+        Set the data link type to use while capturing packets.
+    -z postrotate-command
+        Used in conjunction with the -C or -G options, this will make tcpdump run "postrotate-command file".
+    -Z user
+    --relinquish-privileges=user
+        Change the user ID to user and the group ID to the primary group of user.
+    expression
+        Selects which packets will be dumped. If no expression is given, all packets on the net will be dumped.
 
     Expression:
         The expression specifies which packets will be captured. If no expression is given, all packets on the network will be captured. Expressions can filter packets based on protocols, source/destination IP addresses, ports, and more.
@@ -96,13 +220,34 @@ OPTIONS
               tcpdump tcp
               ```
 
+EXAMPLES
+    ...
+
+OUTPUT FORMAT
+    ...
+
 NOTES
     tcpdump requires root or administrator privileges to capture packets on most systems. Use with caution, as it can capture sensitive data.
 
     For more information, refer to the official tcpdump documentation at https://www.tcpdump.org.
 
+SEE ALSO
+    stty(1), pcap(3PCAP), pcap-savefile(5), pcap-filter(7), pcap-tstamp(7)
+    https://www.iana.org/assignments/media-types/application/vnd.tcpdump.pcap
+
 AUTHORS
-    tcpdump was originally written by Van Jacobson, Craig Leres, and Steven McCanne. It is maintained by the tcpdump team. For a full list of contributors, see https://www.tcpdump.org.
+    The original authors are:
+    Van Jacobson, Craig Leres and Steven McCanne, all of the Lawrence Berkeley National Laboratory, University of California, Berkeley, CA.
+
+    It is currently maintained by The Tcpdump Group.
+
+    The current version is available via HTTPS:
+    https://www.tcpdump.org/
+
+    The original distribution is available via anonymous FTP:
+    ftp://ftp.ee.lbl.gov/old/tcpdump.tar.Z
+
+    IPv6/IPsec support is added by WIDE/KAME project. This program uses OpenSSL/LibreSSL, under specific configurations.
 ```
 
 ## tcpdump Filters

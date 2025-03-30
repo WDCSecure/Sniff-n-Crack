@@ -10,6 +10,27 @@ Sniff&Crack is a comprehensive wireless security toolkit designed to assist in p
 - **Password Cracking**: Tools to attempt password recovery for secured networks.
 - **Network Vulnerability Analysis**: Identify and report potential security flaws in wireless networks.
 
+## Getting Started
+
+To get started with Sniff&Crack, follow these steps:
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/your-username/Sniff-Crack.git
+   cd Sniff-Crack
+   ```
+
+2. **Install Dependencies**:
+   Refer to the documentation in the `/tools` and `/scripts` directories for installing required tools and libraries.
+
+3. **Explore the Toolkit**:
+   - Use the `/utility` directory to configure your wireless interface.
+   - Refer to `/scripts` for automation scripts to simplify common tasks.
+   - Check `/attacks` for detailed guides on executing wireless attacks ethically.
+
+4. **Run Example Scripts**:
+   Try running the example scripts in the `/scripts` directory to familiarize yourself with the toolkit.
+
 ## Repository Structure
 
 The repository is organized into the following directories:
