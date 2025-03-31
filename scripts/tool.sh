@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wireless Security Toolkit - Advanced Edition
-# Usage: ./wifi-toolkit.sh [command] [options]
+# Usage: ./tool.sh [command] [options]
 
 INTERFACE_MONITOR=${INTERFACE_MONITOR:-wlxe8de271462a3}
 INTERFACE_MANAGED=${INTERFACE_MANAGED:-wlp2s0}
@@ -26,59 +26,59 @@ print_command() {
 
 print_usage() {
     echo -e "${YELLOW}Wireless Security Toolkit${NC} - Command Reference"
-    echo "Usage: ./wifi-toolkit.sh [command] [options]"
+    echo "Usage: ./tool.sh [command] [options]"
     echo ""
     echo -e "Commands:"
     echo ""
     
     print_command "monitor" "Set monitor mode" \
-        "./wifi-toolkit.sh monitor" \
+        "./tool.sh monitor" \
         "INTERFACE_MONITOR=wlxe8de271462a3" "External interface" \
         "-i wlxe8de271462a3" "Interface flag"
 
     print_command "managed" "Set managed mode" \
-        "./wifi-toolkit.sh managed" \
+        "./tool.sh managed" \
         "INTERFACE=wlan0mon" "Monitor interface" \
         "-i wlan0mon" "Interface flag"
 
     print_command "scan2" "Scan 2.4GHz networks" \
-        "./wifi-toolkit.sh scan2" \
+        "./tool.sh scan2" \
         "INTERFACE=wlan0mon" "Monitor interface" \
         "-i wlan0mon" "Interface flag"
 
     print_command "scan5" "Scan 5GHz networks" \
-        "./wifi-toolkit.sh scan5" \
+        "./tool.sh scan5" \
         "INTERFACE=wlan0mon" "Monitor interface" \
         "-i wlan0mon" "Interface flag"
 
     print_command "scan-nm" "Scan with NetworkManager" \
-        "./wifi-toolkit.sh scan-nm" \
+        "./tool.sh scan-nm" \
         "INTERFACE_MANAGED=wlp2s0" "Managed interface" \
         "-i wlp2s0" "Interface flag"    
 
     print_command "deauth" "Perform deauth attack" \
-        "./wifi-toolkit.sh deauth [AP_MAC] [CLIENT_MAC] | [-a AP_MAC -c CLIENT_MAC]" \
+        "./tool.sh deauth [AP_MAC] [CLIENT_MAC] | [-a AP_MAC -c CLIENT_MAC]" \
         "AP_MAC=00:11:22:33:44:55" "Target AP MAC" \
         "-a 00:11:22:33:44:55" "AP MAC flag" \
         "CLIENT_MAC=66:77:88:99:AA:BB" "Target client MAC" \
         "-c 66:77:88:99:AA:BB" "Client MAC flag"
 
     print_command "set-channel" "Set wireless channel" \
-        "./wifi-toolkit.sh set-channel [CHANNEL]" \
+        "./tool.sh set-channel [CHANNEL]" \
         "CHANNEL=6" "Target channel (1-14)" \
         "-c 6" "Channel flag" \
         "INTERFACE=wlan0mon" "Monitor interface" \
         "-i wlan0mon" "Interface flag"
 
     print_command "ping-flood" "ICMP flood attack" \
-        "./wifi-toolkit.sh ping-flood [SRC_IP] [DST_IP] | [-s SRC_IP -d DST_IP]" \
+        "./tool.sh ping-flood [SRC_IP] [DST_IP] | [-s SRC_IP -d DST_IP]" \
         "SRC_IP=10.0.0.1" "Spoofed source IP" \
         "-s 10.0.0.1" "Source IP flag" \
         "DST_IP=192.168.1.1" "Target IP address" \
         "-d 192.168.1.1" "Destination IP flag"
 
     print_command "capture-handshake" "Capture WPA handshake" \
-        "./wifi-toolkit.sh capture-handshake [CHANNEL] [BSSID] [OUTPUT] | [-c CHANNEL -b BSSID -o OUTPUT]" \
+        "./tool.sh capture-handshake [CHANNEL] [BSSID] [OUTPUT] | [-c CHANNEL -b BSSID -o OUTPUT]" \
         "CHANNEL=6" "Target channel" \
         "-c 6" "Channel flag" \
         "BSSID=00:11:22:33:44:55" "Target BSSID" \
@@ -87,21 +87,21 @@ print_usage() {
         "-o file" "Output flag"
 
     print_command "crack" "Crack WPA handshake" \
-        "./wifi-toolkit.sh crack [WORDLIST] [CAP] | [-w WORDLIST -f CAP]" \
+        "./tool.sh crack [WORDLIST] [CAP] | [-w WORDLIST -f CAP]" \
         "WORDLIST=wordlist.txt" "Password dictionary" \
         "-w wordlist.txt" "Wordlist flag" \
         "CAP=file.cap" "Capture file" \
         "-f file.cap" "Capture file flag"
 
     print_command "convert-hc" "Convert to Hashcat format" \
-        "./wifi-toolkit.sh convert-hc [PCAP] [HASH_FILE] | [-p PCAP -H HASH_FILE]" \
+        "./tool.sh convert-hc [PCAP] [HASH_FILE] | [-p PCAP -H HASH_FILE]" \
         "PCAP=dump.pcapng" "Input capture file" \
         "-p dump.pcapng" "PCAP flag" \
         "HASH_FILE=hash.hc22000" "Output file" \
         "-H hash.hc22000" "Hash file flag"
 
     print_command "hashcat" "Attack with Hashcat" \
-        "./wifi-toolkit.sh hashcat [HASH_FILE] [WORDLIST] | [-H HASH_FILE -w WORDLIST]" \
+        "./tool.sh hashcat [HASH_FILE] [WORDLIST] | [-H HASH_FILE -w WORDLIST]" \
         "HASH_FILE=hash.hc22000" "Target hash file" \
         "-H hash.hc22000" "Hash file flag" \
         "WORDLIST=wordlist.txt" "Password dictionary" \
@@ -247,7 +247,6 @@ cmd_capture-handshake() {
         exit 1
     fi
 
-    # Modifica il blocco di estrazione del MAC del client
     echo -e "${GREEN}Extracting client MAC from EAPOL packets...${NC}"
     local CLIENT_MAC=$(tshark -r "$CAP_FILE" \
         -Y "eapol && wlan.bssid == $BSSID && wlan.sa != $BSSID" \
@@ -260,7 +259,7 @@ cmd_capture-handshake() {
         exit 1
     fi
 
-    echo -e "${GREEN}Filtering capture file...${NC}"
+    echo -e "\n${GREEN}Generated Wireshark filter:${NC}"
     local FILTER="(wlan.fc.type == 0 && wlan.bssid == $BSSID) || 
         (wlan.fc.type_subtype == 0x08 && wlan.bssid == $BSSID) || 
         (wlan.fc.type_subtype == 0x05 && wlan.sa == $BSSID) || 
@@ -268,24 +267,19 @@ cmd_capture-handshake() {
         (wlan.fc.type_subtype == 0x01 && wlan.sa == $CLIENT_MAC) || 
         (eapol && (wlan.sa == $BSSID || wlan.sa == $CLIENT_MAC))"
     
-    # Applica filtro e ordina per timestamp
     echo -e "${GREEN}Filtering capture...${NC}"
     local FILTERED_PCAP="${OUTPUT}_filtered.pcap"
-    execute_and_check "tshark -r $CAP_FILE -Y \"$FILTER\" -w $FILTERED_PCAP -F pcap"
+    execute_and_check "tshark -r $CAP_FILE -Y \"$FILTER\" -w $FILTERED_PCAP -F pcap\n"
 
-    # Estrai solo gli ultimi 4+ messaggi EAPOL
     echo -e "${GREEN}Extracting final EAPOL messages...${NC}"
     local FINAL_EAPOL=$(tshark -r "$FILTERED_PCAP" -Y "eapol" -T fields -e frame.number 2>/dev/null | tail -n +2)
     local LAST_FRAME=$(echo "$FINAL_EAPOL" | tail -n 1)
     
-    # Seleziona tutti i pacchetti fino all'ultimo EAPOL + beacon
     local FINAL_FILTER="frame.number <= $LAST_FRAME || wlan.fc.type_subtype == 0x08"
     tshark -r "$FILTERED_PCAP" -Y "$FINAL_FILTER" -w "${OUTPUT}_final.pcap" -F pcap
 
-    echo -e "${GREEN}SUCCESS: Captured $EAPOL_COUNT EAPOL messages${NC}"
-    echo -e "${GREEN}Filtered and cleaned handshake saved to ${CYAN}$CLEANED_PCAP${NC}"
-    echo -e "${YELLOW}Verify the handshake with: ${CYAN}./wifi-toolkit.sh crack wordlist.txt $CLEANED_PCAP${NC}"
-
+    echo -e "\n${GREEN}SUCCESS: Captured handshake with final EAPOL messages${NC}"
+    echo -e "${YELLOW}Verify with: ${CYAN}./wifi-toolkit.sh crack wordlist.txt ${OUTPUT}_final.pcap${NC}\n"
 }
 
 # ======================================================================
