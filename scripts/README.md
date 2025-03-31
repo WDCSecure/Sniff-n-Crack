@@ -28,5 +28,19 @@ A Python script to generate wordlists from input files (CSV or TXT). It extracts
   ```
 - See [wordlist-from-file.md](./wordlist-from-file.md) for detailed documentation.
 
+### 3. `wpa2-crack.sh`
+A Bash script to automate WPA2 handshake extraction and password cracking. It includes:
+- Generating Wireshark filters.
+- Filtering raw captures with `tshark`.
+- Cleaning captures with `wpaclean`.
+- Verifying handshakes with `aircrack-ng`.
+- Cracking passwords using a wordlist.
+
+- **Usage**:
+  ```bash
+  ./wpa2-crack.sh -b <AP_BSSID> -c <CLIENT_MAC> -w <wordlist.txt> -i <raw_capture.pcap> [options]
+  ```
+- See [wpa2-crack.md](./wpa2-crack.md) for detailed documentation.
+
 ## Disclaimer
 These tools are intended for ethical security testing and research purposes only. Unauthorized use against networks you do not own or have explicit permission to test is illegal.
