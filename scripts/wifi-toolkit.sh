@@ -3,9 +3,6 @@
 # Usage: ./wifi-toolkit.sh [command] [options]
 
 INTERFACE=${INTERFACE:-wlo1}
-# INTERFACE=${INTERFACE:-wlp2s0}
-# INTERFACE=${INTERFACE:-wlp0s20f3}
-# INTERFACE=${INTERFACE:-wlan0mon}
 
 # Color codes
 RED="\033[0;31m"
@@ -232,7 +229,7 @@ cmd_ping-flood() {
 }
 
 # ======================================================================
-#  CAPTURE HANDSHAKE COMMAND
+#  CAPTURE HANDSHAKE COMMAND (Enhanced)
 # ======================================================================
 cmd_capture-handshake() {
     parse_common "$@"
@@ -244,7 +241,50 @@ cmd_capture-handshake() {
     [ -z "$CHANNEL" ] && { echo -e "${RED}CHANNEL required${NC}"; exit 1; }
     [ -z "$BSSID" ] && { echo -e "${RED}BSSID required${NC}"; exit 1; }
     [ -z "$OUTPUT" ] && { echo -e "${RED}OUTPUT required${NC}"; exit 1; }
+    
+    echo -e "${GREEN}Starting airodump-ng capture...${NC}"
     execute_and_check "airodump-ng -w $OUTPUT -c $CHANNEL --bssid $BSSID $INTERFACE"
+    
+    local CAP_FILE="${OUTPUT}-01.cap"
+    if [ ! -f "$CAP_FILE" ]; then
+        echo -e "${RED}Capture file $CAP_FILE not found${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}Extracting client MAC from EAPOL packets...${NC}"
+    local CLIENT_MAC=$(tshark -r "$CAP_FILE" \
+        -Y "eapol && wlan.bssid == $BSSID && wlan.sa != $BSSID" \
+        -T fields -e wlan.sa 2>/dev/null | 
+        grep -Eio '[0-9a-f]{2}[:-][0-9a-f]{2}[:-][0-9a-f]{2}[:-][0-9a-f]{2}[:-][0-9a-f]{2}[:-][0-9a-f]{2}' | 
+        sort -u | head -n 1)
+    if [ -z "$CLIENT_MAC" ]; then
+        echo -e "${RED}Client MAC not found. Displaying all found MAC addresses:${NC}"
+        tshark -r "$CAP_FILE" -Y "eapol" -T fields -e wlan.sa -e wlan.da
+        exit 1
+    fi
+
+    echo -e "${GREEN}Filtering capture file...${NC}"
+    local FILTER="(wlan.fc.type == 0 && wlan.bssid == $BSSID) || 
+        (wlan.fc.type_subtype == 0x08 && wlan.bssid == $BSSID) || 
+        (wlan.fc.type_subtype == 0x05 && wlan.sa == $BSSID) || 
+        (wlan.fc.type_subtype == 0x00 && wlan.sa == $CLIENT_MAC) || 
+        (wlan.fc.type_subtype == 0x01 && wlan.sa == $CLIENT_MAC) || 
+        (eapol && (wlan.sa == $BSSID || wlan.sa == $CLIENT_MAC))"
+    
+    echo -e "${GREEN}Filtering capture...${NC}"
+    local FILTERED_PCAP="${OUTPUT}_filtered.pcap"
+    execute_and_check "tshark -r $CAP_FILE -Y \"$FILTER\" -w $FILTERED_PCAP -F pcap"
+
+    echo -e "${GREEN}Extracting final EAPOL messages...${NC}"
+    local FINAL_EAPOL=$(tshark -r "$FILTERED_PCAP" -Y "eapol" -T fields -e frame.number 2>/dev/null | tail -n +2)
+    local LAST_FRAME=$(echo "$FINAL_EAPOL" | tail -n 1)
+    
+    local FINAL_FILTER="frame.number <= $LAST_FRAME || wlan.fc.type_subtype == 0x08"
+    tshark -r "$FILTERED_PCAP" -Y "$FINAL_FILTER" -w "${OUTPUT}_final.pcap" -F pcap
+
+    echo -e "${GREEN}SUCCESS: Captured EAPOL messages${NC}"
+    echo -e "${GREEN}Filtered and cleaned handshake saved to ${CYAN}${OUTPUT}_final.pcap${NC}"
+    echo -e "${YELLOW}Verify the handshake with: ${CYAN}./wifi-toolkit.sh crack wordlist.txt ${OUTPUT}_final.pcap${NC}"
 }
 
 # ======================================================================
@@ -293,7 +333,7 @@ cmd_hashcat() {
 #  MAIN EXECUTION
 # ======================================================================
 case "$1" in
-    # Add 'shift' to remove command name from arguments
+    # Remove command name from arguments
     monitor)
         shift
         cmd_monitor "$@" ;;
