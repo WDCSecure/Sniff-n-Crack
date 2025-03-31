@@ -30,10 +30,7 @@ This guide also introduces a Python script, `/wordlist-from-file.py`, which allo
      brew install wireshark
      ```
 
-5. **Python Script for Wordlist Generation**  
-   - Use the `/wordlist-from-file.py` script to create custom wordlists from a file (e.g., a CSV file). This script can generate variations of passwords based on input data, making it a powerful tool for targeted attacks.
-
-6. **Script Requirements**  
+5. **Script Requirements**  
    - A bash or zsh shell (the script is POSIX compliant).
    - The script assumes you have basic Unix tools (grep, sed, etc.).
 
@@ -46,51 +43,49 @@ This guide also introduces a Python script, `/wordlist-from-file.py`, which allo
    - Use Wireless Diagnostics to capture on the target channel.
    - Save the file as (for example) `raw_capture.pcap`.
 
-3. **Analyze in Wireshark**  
-   - Open `raw_capture.pcap` in Wireshark.
-   - Identify the AP BSSID and the Client MAC.
+3. **Run the Script**  
+   - Use the `wpa2-crack.sh` script to automate the process:
+     - Extract the STA MAC address (if not provided).
+     - Remove broken packets from the capture file.
+     - Generate a Wireshark filter.
+     - Filter the raw capture using `tshark`.
+     - Clean the capture using `wpaclean` (optional).
+     - Finalize the capture to ensure the 4-way handshake is the last sequence.
+     - Verify the handshake using `aircrack-ng`.
+     - Optionally, crack the handshake using a wordlist.
 
-4. **Generate a Dedicated Filter**  
-   - Use the provided script (or the standalone filter script) to generate a Wireshark display filter.
-   - The filter will capture:
-     - Beacon frames (for the ESSID)
-     - Probe responses
-     - Authentication/Association frames
-     - EAPOL handshake messages
+4. **Verify the Handshake**  
+   - The script uses `aircrack-ng` to check that a complete handshake is present.
 
-5. **Apply the Filter and Export**  
-   - Use `tshark` with the generated filter to export only the required packets:
-     ```bash
-     tshark -r raw_capture.pcap -Y "<your_filter>" -w filtered_capture.pcap -F pcap
-     ```
+5. **Crack the Handshake**  
+   - If a valid handshake is found, the script can start cracking using a wordlist.
 
-6. **Clean the Capture with wpaclean**  
-   - Run `wpaclean` to remove extraneous packets:
-     ```bash
-     wpaclean cleaned_handshake.pcap filtered_capture.pcap
-     ```
+### Automatic STA MAC Address Extraction
+1. If the `-c` option is not provided, the script uses the `extract_sta_mac` function.
+2. The function analyzes the EAPOL messages in the input pcap file.
+3. If a single unique STA MAC address is found, it is used as the `CLIENT_MAC`.
+4. If multiple STA MAC addresses are found, the script prompts the user to select one or automatically selects the first.
 
-7. **Verify the Handshake**  
-   - Use `aircrack-ng` to check that a complete handshake is present:
-     ```bash
-     aircrack-ng cleaned_handshake.pcap
-     ```
-   - You should see a valid handshake for your target network.
+### Broken Packet Removal
+The script uses `editcap` to remove broken packets from the input pcap file before filtering. This ensures the capture file is clean and ready for processing.
 
-8. **Crack the Handshake**  
-   - With a wordlist (e.g., `wordlist.txt`), run:
-     ```bash
-     aircrack-ng -w wordlist.txt -b <BSSID> cleaned_handshake.pcap
-     ```
-   - Replace `<BSSID>` with your AP’s BSSID.
+### Example Usage
+If the STA MAC address is not known, simply omit the `-c` option:
+```bash
+./wpa2-crack.sh -b 00:14:22:01:23:45 -w wordlist.txt -i raw_capture.pcap --cleaning
+```
+
+The script will automatically extract the STA MAC address, clean the capture, and finalize it for handshake verification.
 
 ## Automation with the Script
 
-A bash/zsh script named `wpa2-crack.sh` is provided. It encapsulates all of the above steps into functions:
+The `wpa2-crack.sh` script encapsulates all of the above steps into functions:
 - It accepts the AP BSSID, Client MAC, and Wordlist as parameters.
 - It automatically generates the Wireshark filter.
 - It uses `tshark` to filter the raw capture.
-- It runs `wpaclean` to prepare the handshake.
+- It removes broken packets using `editcap`.
+- It runs `wpaclean` to prepare the handshake (if the `--cleaning` flag is provided).
+- It finalizes the capture to ensure the 4-way handshake is the last sequence.
 - It verifies the handshake and optionally starts the cracking process.
 
 Make sure the script is executable:
@@ -100,7 +95,7 @@ chmod +x wpa2-crack.sh
 
 Then run it with the required flags:
 ```bash
-./wpa2-crack.sh -b 00:14:22:01:23:45 -c 12:34:56:78:9a:bc -w wordlist.txt -i raw_capture.pcap
+./wpa2-crack.sh -b 00:14:22:01:23:45 -c 12:34:56:78:9a:bc -w wordlist.txt -i raw_capture.pcap --cleaning
 ```
 
 ### Optional Flags
@@ -110,38 +105,32 @@ The `-s` or `--save` flag creates a directory named `wpa2_cracking_<timestamp>` 
 1. The generated Wireshark filter (`filters.txt`).
 2. The filtered capture file (`filtered_capture.pcap`).
 3. The cleaned handshake file (`cleaned_handshake.pcap`).
+4. The finalized handshake file (`finalized_handshake.pcap`).
 
 Example:
 ```bash
-./wpa2-crack.sh -b 00:14:22:01:23:45 -c 12:34:56:78:9a:bc -w wordlist.txt -i raw_capture.pcap -s
+./wpa2-crack.sh -b 00:14:22:01:23:45 -c 12:34:56:78:9a:bc -w wordlist.txt -i raw_capture.pcap --cleaning -s
 ```
-
-After running the script, you will find all the saved files in the `wpa2_cracking_<timestamp>` directory.
 
 #### Enable Logging (`-l` or `--log`)
 To enable logging, use the `-l` or `--log` flag. This will generate a log file in the same directory as the saved files:
 ```bash
-./wpa2-crack.sh -b 00:14:22:01:23:45 -c 12:34:56:78:9a:bc -w wordlist.txt -i raw_capture.pcap -l
+./wpa2-crack.sh -b 00:14:22:01:23:45 -c 12:34:56:78:9a:bc -w wordlist.txt -i raw_capture.pcap --cleaning -l
 ```
 
-If the `-l` flag is not provided, no log file will be created.
+#### Optional Cleaning Step (`--cleaning`)
+To enable the cleaning step, use the `--cleaning` flag:
+```bash
+./wpa2-crack.sh -b 00:14:22:01:23:45 -c 12:34:56:78:9a:bc -w wordlist.txt -i raw_capture.pcap --cleaning
+```
 
-## Generating Custom Wordlists
+If the flag is not provided, the script skips the cleaning step and directly finalizes the capture.
 
-The `/wordlist-from-file.py` script allows you to create custom wordlists from a file (e.g., a CSV file). It supports generating variations of passwords based on input data.
-
-### Example Usage:
-1. Prepare a CSV file with potential password components (e.g., names, dates, keywords).
-2. Run the script:
-   ```bash
-   python3 /path/to/wordlist-from-file.py -i input.csv -o wordlist.txt
-   ```
-3. Use the generated `wordlist.txt` with `aircrack-ng`:
-   ```bash
-   aircrack-ng -w wordlist.txt -b <BSSID> cleaned_handshake.pcap
-   ```
-
-This approach is particularly useful for targeted attacks where you have some knowledge of the target's password patterns.
+#### Skip Filtering (`--skip-filtering`)
+If the input pcap file is already filtered, use the `--skip-filtering` flag to bypass the filtering step:
+```bash
+./wpa2-crack.sh -b 00:14:22:01:23:45 -c 12:34:56:78:9a:bc -w wordlist.txt -i filtered_capture.pcap --skip-filtering
+```
 
 ## Notes and Limitations
 
