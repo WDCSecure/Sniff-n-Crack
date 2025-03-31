@@ -19,7 +19,18 @@ A Bash script providing a comprehensive toolkit for wireless security tasks, inc
   ```
 - See [wifi-toolkit.md](./wifi-toolkit.md) for detailed documentation.
 
-### 2. `wordlist-from-file.py`
+### 2. `tool.sh`
+An advanced Bash script that extends the functionality of `wifi-toolkit.sh` by supporting multiple network interfaces simultaneously. It allows:
+- One interface to operate in monitor mode while another operates in managed mode.
+- Seamless switching and management of multiple interfaces for advanced wireless security tasks.
+
+- **Usage**:
+  ```bash
+  ./tool.sh [command] [options]
+  ```
+- See [wifi-toolkit.md](./wifi-toolkit.md) for detailed documentation (shared command set).
+
+### 3. `wordlist-from-file.py`
 A Python script to generate wordlists from input files (CSV or TXT). It extracts words, optionally generates variations, and saves them to an output file.
 
 - **Usage**:
@@ -28,7 +39,7 @@ A Python script to generate wordlists from input files (CSV or TXT). It extracts
   ```
 - See [wordlist-from-file.md](./wordlist-from-file.md) for detailed documentation.
 
-### 3. `wpa2-crack.sh`
+### 4. `wpa2-crack.sh`
 A Bash script to automate WPA2 handshake extraction and password cracking. It includes:
 - Generating Wireshark filters.
 - Filtering raw captures with `tshark`.
